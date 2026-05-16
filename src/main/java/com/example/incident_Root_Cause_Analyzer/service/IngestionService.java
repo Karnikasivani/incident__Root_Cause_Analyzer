@@ -25,59 +25,7 @@ public class IngestionService {
 
     @Transactional
     public IngestionResponse ingest(BulkIngestRequest request) {
-        List<LogEntryRequest> rawLogs = request.getLogs();
-
-        // 1. Map to entities (no incidentId yet)
-        List<LogEntry> entries = rawLogs.stream()
-                .map(this::toEntity)
-                .collect(Collectors.toList());
-
-        // 2. Derive metadata from the batch
-        Set<String> services = entries.stream()
-                .map(LogEntry::getServiceName)
-                .collect(Collectors.toCollection(TreeSet::new));
-
-        Instant windowStart = entries.stream()
-                .map(LogEntry::getTimestamp)
-                .min(Comparator.naturalOrder())
-                .orElse(Instant.now());
-
-        Instant windowEnd = entries.stream()
-                .map(LogEntry::getTimestamp)
-                .max(Comparator.naturalOrder())
-                .orElse(Instant.now());
-
-        String severity = deriveSeverity(entries);
-
-        // 3. Create and save the Incident first (we need its ID)
-        String title = buildIncidentTitle(request.getIncidentHint(), services, severity);
-        Incident incident = Incident.builder()
-                .title(title)
-                .windowStart(windowStart)
-                .windowEnd(windowEnd)
-                .status(IncidentStatus.OPEN)
-                .affectedServices(String.join(",", services))
-                .severity(severity)
-                .build();
-        incident = incidentRepository.save(incident);
-        final String incidentId = incident.getId();
-
-        log.info("Created incident [{}] — title='{}', severity={}, services={}",
-                incidentId, title, severity, services);
-
-        // 4. Assign incidentId to all log entries and save
-        entries.forEach(e -> e.setIncidentId(incidentId));
-        logEntryRepository.saveAll(entries);
-
-        log.info("Ingested {} log entries into incident [{}]", entries.size(), incidentId);
-
-        return IngestionResponse.builder()
-                .logsIngested(entries.size())
-                .incidentId(incidentId)
-                .severity(severity)
-                .affectedServices(new ArrayList<>(services))
-                .message("Ingestion complete. Trigger analysis via POST /api/incidents/" + incidentId + "/analyze")
-                .build();
+        return null;
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
@@ -117,5 +65,8 @@ public class IngestionService {
                 ? services.iterator().next()
                 : services.size() + " services";
         return severity + " incident — " + serviceLabel + " @ " + Instant.now();
+    }
+
+    public void saveLog(LogEntry logEntry) {
     }
 }

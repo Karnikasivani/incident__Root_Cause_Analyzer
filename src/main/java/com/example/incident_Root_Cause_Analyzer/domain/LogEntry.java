@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "log_entries", indexes = {
@@ -65,5 +66,15 @@ public class LogEntry {
     @PrePersist
     void prePersist() {
         this.ingestedAt = Instant.now();
+    }
+
+    @Lob                  // Tells Hibernate to store this as a Large Object (CLOB) for long logs
+    private String stackTrace;    // <-- Matches logEntry.getStackTrace()
+
+    private LocalDateTime timestamp1;
+
+    // Default timestamp initialization if not provided in JSON payload
+    public LogEntry() {
+        this.timestamp1 = LocalDateTime.now();
     }
 }
